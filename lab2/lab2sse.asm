@@ -1,32 +1,30 @@
 %include "io64.inc"
 
 section .data
-    float_num1: dd 3.3
-    result_up1: dd 0.0
-    result_down1: dd 0.0
+    real_numb: dd 3.3
+    round_up: dd 0.0
+    round_down: dd 0.0
 
 section .text
     global main
 
 main:
-    ; Округление вверх с использованием SSE
-    movss xmm0, [float_num1]   ; Загружаем число в xmm0
-    roundss xmm0, xmm0, 0x01    ; Округление вверх (к +∞)
-    movss [result_up1], xmm0    ; Сохраняем результат округления вверх
+    movss xmm0, [real_numb]
+    roundss xmm0, xmm0, 0x01
+    movss [round_up], xmm0
 
-    mov eax, [result_up1]       ; Загружаем результат в eax
+    mov eax, [round_up]
     PRINT_STRING "Round up: "
-    PRINT_DEC 4, eax            ; Печатаем результат округления вверх
+    PRINT_DEC 4, eax
     NEWLINE
 
-    ; Округление вниз с использованием SSE
-    movss xmm0, [float_num1]    ; Загружаем число в xmm0
-    roundss xmm0, xmm0, 0x02    ; Округление вниз (к -∞)
-    movss [result_down1], xmm0  ; Сохраняем результат округления вниз
+    movss xmm0, [real_numb]
+    roundss xmm0, xmm0, 0x02
+    movss [round_down], xmm0
 
-    mov eax, [result_down1]     ; Загружаем результат в eax
+    mov eax, [round_down]
     PRINT_STRING "Round down: "
-    PRINT_DEC 4, eax            ; Печатаем результат округления вниз
+    PRINT_DEC 4, eax
 
     ; Завершаем программу
 end:

@@ -1,34 +1,41 @@
 %include "io64.inc"
 
 section .data
-    float_num1: dd 3.3
-    result_up1: dd 0.0
-    result_down1: dd 0.0
-
+    real_numb: dd 3.3
+    round_up: dd 0.0
+    round_down: dd 0.0
+    ctrl_word: dw 0
+    
 section .text
     global main
 
 main:
-    ; Округление вверх с использованием SSE
-    movss xmm0, [float_num1]   ; Загружаем число в xmm0
-    roundss xmm0, xmm0, 0x01    ; Округление вверх (к +∞)
-    movss [result_up1], xmm0    ; Сохраняем результат округления вверх
+    fstcw [ctrl_word]
+    mov ax, [ctrl_word]
+    or ax, 0x0800
+    mov [ctrl_word], ax
+    fldcw [ctrl_word]
 
-    mov eax, [result_up1]       ; Загружаем результат в eax
+    fld dword [real_numb]
+    fistp dword [round_up]
+
+    mov eax, [round_up]
     PRINT_STRING "Round up: "
-    PRINT_DEC 4, eax            ; Печатаем результат округления вверх
+    PRINT_DEC 4, eax
     NEWLINE
 
-    ; Округление вниз с использованием SSE
-    movss xmm0, [float_num1]    ; Загружаем число в xmm0
-    roundss xmm0, xmm0, 0x02    ; Округление вниз (к -∞)
-    movss [result_down1], xmm0  ; Сохраняем результат округления вниз
+    mov ax, [ctrl_word]
+    and ax, 0xF3FF
+    or ax, 0x0400
+    mov [ctrl_word], ax
+    fldcw [ctrl_word]
 
-    mov eax, [result_down1]     ; Загружаем результат в eax
+    fld dword [real_numb]
+    fistp dword [round_down]
+
+    mov eax, [round_down]
     PRINT_STRING "Round down: "
-    PRINT_DEC 4, eax            ; Печатаем результат округления вниз
-
-    ; Завершаем программу
+    PRINT_DEC 4, eax
 end:
     xor eax, eax
     ret
