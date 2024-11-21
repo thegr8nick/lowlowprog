@@ -1,39 +1,34 @@
 %include "io64.inc"
 
 section .data
-    input_num dd 0           ; Переменная для ввода числа
-    result_up dd 0           ; Результат округления вверх
-    result_down dd 0         ; Результат округления вниз
+    float_num1: dd 3.3
+    result_up1: dd 0.0
+    result_down1: dd 0.0
 
 section .text
     global main
 
 main:
-    ; Ввод числа от пользователя
-    PRINT_STRING "Enter a real number:  "
-    NEWLINE
-    GET_DEC 4, input_num    ; Ввод числа (32-битное вещественное)
+    ; Округление вверх с использованием SSE
+    movss xmm0, [float_num1]   ; Загружаем число в xmm0
+    roundss xmm0, xmm0, 0x01    ; Округление вверх (к +∞)
+    movss [result_up1], xmm0    ; Сохраняем результат округления вверх
 
-    ; Округление вверх (SSE)
-    movss xmm0, [input_num] ; Загрузить число в регистр xmm0
-    roundss xmm1, xmm0, 2   ; Округлить вверх (режим 2: к +∞)
-    movss [result_up], xmm1 ; Сохранить результат округления вверх
-
-    ; Вывод результата округления вверх
+    mov eax, [result_up1]       ; Загружаем результат в eax
     PRINT_STRING "Round up: "
-    PRINT_DEC 4, result_up
+    PRINT_DEC 4, eax            ; Печатаем результат округления вверх
     NEWLINE
 
-    ; Округление вниз (SSE)
-    movss xmm0, [input_num] ; Загрузить число в регистр xmm0
-    roundss xmm1, xmm0, 1   ; Округлить вниз (режим 1: к -∞)
-    movss [result_down], xmm1 ; Сохранить результат округления вниз
+    ; Округление вниз с использованием SSE
+    movss xmm0, [float_num1]    ; Загружаем число в xmm0
+    roundss xmm0, xmm0, 0x02    ; Округление вниз (к -∞)
+    movss [result_down1], xmm0  ; Сохраняем результат округления вниз
 
-    ; Вывод результата округления вниз
+    mov eax, [result_down1]     ; Загружаем результат в eax
     PRINT_STRING "Round down: "
-    PRINT_DEC 4, result_down
-    NEWLINE
+    PRINT_DEC 4, eax            ; Печатаем результат округления вниз
 
-    ; Завершение программы
-    xor eax, eax            ; Возврат 0
+    ; Завершаем программу
+end:
+    xor eax, eax
     ret
