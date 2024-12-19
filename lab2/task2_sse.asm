@@ -1,64 +1,54 @@
-%include "io64.inc"
+section .rodata
+    x: dd -0.5
+    num: dd 30
+    ln2: dd 0.6931471805599
 
-section .data
-    x_val: dd 0.3
-    one: dd 1.0
-    minus_one: dd -1.0
-    zero: dd 0.0
-    max_iter: dd 10
-    ln2: dd 0.69314718
-    neg_one: dd -1.0
+section .bss
+    result: resd 1
 
 section .text
     global main
-
+    
 main:
     mov rbp, rsp; for correct debugging
-task2:
-    movss xmm0, dword [x_val]
-    comiss xmm0, dword [zero]
-    jbe error_negative_x
-    comiss xmm0, dword [one]
-    jae error_x_out_of_range
-
-    movss xmm1, xmm0
-    subss xmm1, dword [one]
-
-    movss xmm2, xmm1
-    movss xmm3, xmm1
-    movss xmm4, dword [one]
-    mov ecx, dword [max_iter]
-
-taylor_loop:
-    cmp ecx, 0
-    je taylor_end
-
-    addss xmm4, dword [one]
-
-    mulss xmm2, xmm1
-
-    mulss xmm2, dword [neg_one]
-
-    movss xmm5, xmm2
-    divss xmm5, xmm4
-
-    addss xmm3, xmm5
-
-    dec ecx
-    jmp taylor_loop
-
-taylor_end:
-    divss xmm3, dword [ln2]
+    movss xmm0, dword[x]
+    movss xmm2, dword[ln2]
+    xorps xmm1, xmm1
+    mov ecx, 1
     
-    jmp end
-    
-error_negative_x:
-    PRINT_STRING "3) Error: x must be greater than 0."
-    jmp end
+.start_loop:
+    cmp ecx, dword[num]
+    jge .end_loop
+    mov eax, ecx
+    cvtsi2ss xmm3, ecx
+    movss xmm5, xmm0
 
-error_x_out_of_range:
-    PRINT_STRING "3) Error: x must be less than 0."
+.loop_power:
+    cmp eax, 1
+    jle .skip_power
+    mulss xmm5, xmm0
+    dec eax
+    jmp .loop_power
     
-end:
-    xor eax, eax
+.skip_power:
+
+    movss xmm4, xmm5
+    divss xmm4, xmm3
+
+    test ecx, 1
+    jnz .add_term
+    subss xmm1, xmm4
+    jmp .next_iter
+    
+.add_term:
+    addss xmm1, xmm4
+
+.next_iter:
+    inc ecx
+    jmp .start_loop
+    
+.end_loop:
+    divss xmm1, xmm2
+    movss dword[result], xmm1
+    
     ret
