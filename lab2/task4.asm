@@ -1,50 +1,78 @@
 %include "io64.inc"
 
-section .rodata
-    a: dd 1.0
-    x: dd 1.0
-    y: dd 0.10
+section .data
+    y: dq 2.0
+    x: dq 2.0          
+    a: dq 0.1   
+    x_minus_a: dq 0.0 
+    exp_x_minus_a: dq 0.0
+    exp_neg_x_minus_a: dq 0.0
+    cosh_result4: dq 0.0
 
 section .text
     global main
+
 main:
-    mov rbp, rsp; for correct debugging
-    ; y >= lg^2(sin(x) + a)
+    mov rbp, rsp
+
+    fld qword [x]
+    fsub qword [a]
+    fstp qword [x_minus_a]
+
+    fld qword [x_minus_a]
+    fldl2e
+    fmulp st1, st0
     
-    ; Вычисление sin(x)
+    fld st0
+    frndint
+    fsub st1, st0
+    fxch st1
+    f2xm1
     fld1
-    fld dword[x]         
-    fsin                 
+    faddp st1, st0
+    fscale
+    fstp st1
+    fstp qword [exp_x_minus_a]
+
+    fld qword [x_minus_a]
+    fchs
+    fldl2e
+    fmulp st1, st0
     
-    ; sin(x) + a
-    fld dword[a]        
-    fadd                 
-    
-    ; lg(sin(x) + a) (логарифм с основанием 10)
-    fyl2x                ; вычислить log2(sin(x) + a)
-    fldl2t  ; загрузить log2(10)
-    fdiv                 ; log10(sin(x) + a) = log2(sin(x) + a) / log2(10)
-    
-    ; lg^2(sin(x) + a)
-    fld st0             ; дублировать log10(sin(x) + a)
-    fmul st0, st0       ; возвести в квадрат (log10(sin(x) + a))^2
-    
-    ; Сравнение с y
-    fld dword[y]        ; загрузить y
-    fcomip st1          ; сравнить y с lg^2(sin(x) + a)
-    
-    ; Проверка условия
-    jl .false           ; если y < lg^2(sin(x) + a), перейти к .true
-    
-    ; Если y >= lg^2(sin(x) + a)
+    fld st0
+    frndint
+    fsub st1, st0
+    fxch st1
+    f2xm1
+    fld1
+    faddp st1, st0
+    fscale
+    fstp st1
+    fstp qword [exp_neg_x_minus_a]
+
+    fld qword [exp_x_minus_a]
+    fld qword [exp_neg_x_minus_a]
+    faddp st1, st0
+    fld1
+    fadd st0, st0
+    fdivp st1, st0
+    fstp qword [cosh_result4]
+
+    fld qword [y]
+    fld qword [cosh_result4]
+    fcompp
+
+    fstsw ax
+    sahf
+
+    jae condition_true
+
+    PRINT_DEC 4, 0
+    jmp end
+
+condition_true:
     PRINT_DEC 4, 1      ; вывести 1
-    jmp .end
-    
-.false:
-    PRINT_DEC 4, 0      ; вывести 0
-    
-.end:
-    fstp st0
-    fstp st7
-    xor rax, rax        ; вернуть 0
+
+end:
+    xor eax, eax
     ret
