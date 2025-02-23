@@ -1,28 +1,15 @@
-%include "io64.inc"
+section .data
+    a: dd 5.0
 
-section .bss
-    x: resd 1
-section .rodata
-    a: dd 3.0
-    section .rodata
-    ;2^ctg(x) = a
-    ;x = arctg(log2(a))
-    
 section .text
-global main
+    global main
 
 main:
-mov rbp, rsp;
-xor rbx, rbx
-
-fld1
-fld dword[a] ;ST0 = x
-
-fyl2x
-fld1
-fxch
-fpatan
-
-fstp dword[x]
-
-ret
+    mov rbp, rsp; for correct debugging
+    fld1
+    fld dword [a]
+    fyl2x
+    fld1
+    fpatan
+    
+    ret

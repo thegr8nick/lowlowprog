@@ -1,74 +1,76 @@
-section .rodata
-    polynomial: dd 0xEDB88320
-    init_crc: dd 0xFFFFFFFF
-    final_crc: dd 0xFFFFFFFF
-    fmt_input: db "%s", 0
-    fmt_output: db "%08X", 10, 0
+%include "io64.inc"
+
+section .data
+    ent db "", 10, 0
+    output_prime db "A prime number", 10, 0
+    output_not_prime db "Not a prime number", 10, 0
+    length_fmt db "%d", 0
+    string_fmt db "%s", 0
+
+section .bss
+    number resd 1
+    is_prime resb 1
 
 section .text
-extern printf
-extern scanf
-extern malloc
-extern free
-global main
+    global main
+    extern printf
+    extern scanf
 
 main:
     push ebp
     mov ebp, esp
-    sub esp, 32
-    
-    ; выделение памяти для строки
-    push 257  ; размер строки + 1
-    call malloc
-    add esp, 4
-    mov esi, eax ; указатель на строку
+    sub esp, 40
 
-    ; чтение ввода строки
-    push esi
-    push fmt_input
+    push number
+    push length_fmt
     call scanf
     add esp, 8
 
-    ; инициализация CRC
-    mov edx, dword [init_crc]
+    mov eax, [number]
+    cmp eax, 1
+    je not_prime
+    cmp eax, 2
+    je print_prime
 
-.cycle_start:
-    movzx eax, byte [esi] ; загружаем байт
-    test al, al
-    jz .cycle_end
+    mov ecx, 2
+    mov byte [is_prime], 1
 
-    xor edx, eax
-    mov ecx, 0
+loop_check:
+    mov eax, [number]
+    xor edx, edx
+    div ecx
+    cmp edx, 0
+    je not_prime
 
-.bit_loop:
-    mov eax, edx
-    and eax, 1
-    shr edx, 1
-    test eax, eax
-    jz .bit_end
-    xor edx, dword [polynomial]
+    mov eax, ecx
+    mul ecx
+    cmp eax, [number]
+    jg end_check
 
-.bit_end:
     inc ecx
-    cmp ecx, 8
-    jl .bit_loop
+    jmp loop_check
 
-    inc esi
-    jmp .cycle_start
+not_prime:
+    mov byte [is_prime], 0
 
-.cycle_end:
-    xor edx, dword [final_crc]
+end_check:
+    cmp byte [is_prime], 1
+    je print_prime
 
-    ; вывод результата
-    push edx
-    push fmt_output
+    push output_not_prime
+    push string_fmt
     call printf
     add esp, 8
 
-    ; освобождение памяти
-    push esi
-    call free
+    jmp end_program
 
-    xor eax, eax
-    leave
+print_prime:
+    push output_prime
+    push string_fmt
+    call printf
+    add esp, 8
+
+end_program:
+    mov esp, ebp
+    pop ebp
     ret

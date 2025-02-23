@@ -1,3 +1,0 @@
-powershell: Get-Content {file} -Raw | ./{program}
-cmd: {program} < {file}
-linux: cat {file} | ./{program} hoặc ./{program} < {file}

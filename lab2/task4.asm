@@ -71,7 +71,7 @@ main:
     jmp end
 
 condition_true:
-    PRINT_DEC 4, 1      ; вывести 1
+    PRINT_DEC 4, 1
 
 end:
     xor eax, eax

@@ -1,80 +1,78 @@
-;%include "io64.inc"
+%include "io64.inc"
 
-section .rodata
-    polynomial: dd 0xEDB88320
-    init_crc: dd 0xFFFFFFFF
-    final_crc: dd 0xFFFFFFFF 
-    fmt_input: db "%s", 0
-    fmt_output: db "%08X", 10, 0
+section .data
+    prompt db "Enter a number: ", 0
+    ent db "", 10, 0
+    output_prime db "A prime number", 10, 0
+    output_not_prime db "Not a prime number", 10, 0
+    length_fmt db "%d", 0
+    string_fmt db "%s", 0
     
+section .bss
+    number resd 1
+    is_prime resb 1
     
-
 section .text
-extern printf
-extern scanf
-extern malloc
-extern free
-global main
-
-
+    global main
+    CEXTERN printf
+    CEXTERN scanf
+    
 main:
-    ;mov rbp, rsp; for correct debugging
-    ; i - ECX 
-    ; data - RSI
-    ; crc - EDX
-    ;GET_STRING data, 256
-    push r12
-    push rsi
-    push rbp
     mov rbp, rsp
-    sub rsp, 32
+    sub rsp, 40
     
-    mov rcx, 257 ; RCX, RDX, R8, R9, XMM0-3
-    call malloc ; result to RAX, if not success NULL
-    mov r12, rax ; regsiter non-volatile(ben vung)
-    
-    ;read input string
-    lea rcx, [fmt_input]
-    mov rdx, r12
+    mov rcx, length_fmt
+    mov rdx, number  
     call scanf
     
-    ;initialize CRC calculation
-    mov edx, [init_crc]
-    mov rsi, r12
-.cycle_start:      ; Load the address of input into RSI
-    movzx eax, byte [rsi] ; Move with Zero-Extend: Copy the first byte of input into EAX
-    test al, al
-    jz .cycle_end
-     
-    xor edx, eax  
-    mov ecx, 0  ; Initialize counter to 0
-.bit_loop:
-    mov eax, edx
-    and eax, 1  ; Now EAX contains the least significant bit of EDX
-    shr edx, 1 
 
-    test eax, eax ; check if least significant bit is 0 or 1
-    jz .bit_end   ; if 0, skip XOR operation
-    xor edx, [polynomial] ; if 1, XOR EDX with polynomial
-.bit_end:
-    inc ecx       ; Increment counter
-    cmp ecx, 8    ; Compare counter with 8
-    jl .bit_loop  ; If counter is less than 8, continue loop
+    mov eax, [number]
+    cmp eax, 1
+    je not_prime
+    cmp eax, 2
+    je print_prime
 
-    inc rsi
-    jmp .cycle_start
-.cycle_end:
-    xor edx, [final_crc] ;0xF...F
+    mov ecx, 2
+    mov byte [is_prime], 1
+   
     
-    ;print result
-    lea rcx, [fmt_output]
+loop_check:
+    mov eax, [number]
+    xor edx, edx
+    div ecx
+    cmp edx, 0
+    je not_prime
+
+    mov eax, ecx
+    mul ecx
+    cmp eax, [number]
+    jg end_check
+
+    inc ecx
+    jmp loop_check
+
+not_prime:
+    mov byte [is_prime], 0
+
+end_check:
+    mov eax, [number]
+
+    cmp byte [is_prime], 1
+    je print_prime
+    
+    mov rcx, string_fmt
+    mov rdx, output_not_prime
     call printf
     
-    ;free memory
-    mov rcx, r12
-    call free
+    jmp end_program
+
+print_prime:
+    mov rcx, string_fmt
+    mov rdx, output_prime
+    call printf
+
+end_program:
     xor eax, eax
-    leave
-    pop rsi
-    pop r12
-    ret   
+    and rsp, 40
+    mov rsp, rbp
+    ret
